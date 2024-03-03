@@ -82,11 +82,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 
 	private File file;
 
-	//create an instance of the Manager class
-	private EmployeeSearchManager manager;
 
-	//create an instance of the fileManager class
-	private EmployeeFileManager employeeFileManager;
 
 
 	// font for labels, text fields and combo boxes
@@ -378,7 +374,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// using the EmployeeFileManager
 	private void firstRecord() {
 		if (isSomeoneToDisplay()) {
-			currentEmployee = manager.getFirstRecord();
+			currentEmployee = fileManager.getFirstRecord();
 			if (currentEmployee.getEmployeeId() == 0)
 				nextRecord();
 		}
@@ -387,7 +383,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// find byte start in file for previous active record
 	private void previousRecord() {
 		if (isSomeoneToDisplay()) {
-			currentEmployee = manager.getPreviousRecord(currentByteStart);
+			currentEmployee = fileManager.getPreviousRecord(currentByteStart);
 			if (currentEmployee.getEmployeeId() == 0)
 				previousRecord();
 		}
@@ -396,7 +392,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// find byte start in file for next active record
 	private void nextRecord() {
 		if (isSomeoneToDisplay()) {
-			currentEmployee = manager.getNextRecord(currentByteStart);
+			currentEmployee = fileManager.getNextRecord(currentByteStart);
 			if (currentEmployee.getEmployeeId() == 0)
 				nextRecord();
 		}
@@ -405,7 +401,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// find byte start in file for last active record
 	private void lastRecord() {
 		if (isSomeoneToDisplay()) {
-			currentEmployee = manager.getLastRecord();
+			currentEmployee = fileManager.getLastRecord();
 			if (currentEmployee.getEmployeeId() == 0)
 				previousRecord();
 		}
@@ -417,7 +413,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 		try {
 			if (isSomeoneToDisplay()) {
 				int searchId = Integer.parseInt(searchByIdField.getText().trim());
-				currentEmployee = manager.searchEmployeeById(searchId);
+				currentEmployee = fileManager.searchEmployeeById(searchId);
 				if (currentEmployee != null) {
 					found = true;
 				}
@@ -439,7 +435,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	public void searchEmployeeBySurname() {
 		if (checkInput() && !checkForChanges()) {
 			String surnameToSearch = searchBySurnameField.getText().trim();
-			currentEmployee = manager.searchEmployeeBySurname(surnameToSearch);
+			currentEmployee = fileManager.searchEmployeeBySurname(surnameToSearch);
 			if (currentEmployee != null) {
 				displayRecords(currentEmployee);
 			} else {
@@ -511,7 +507,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 			int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to delete record?", "Delete",
 					JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
 			if (returnVal == JOptionPane.YES_OPTION) {
-				employeeFileManager.deleteRecord(currentByteStart);
+				fileManager.deleteRecord(currentByteStart);
 				if (isSomeoneToDisplay()) {
 					nextRecord();
 					displayRecords(currentEmployee);
@@ -569,7 +565,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 
 	// check if any of records in file is active - ID is not 0
 	private boolean isSomeoneToDisplay() {
-		boolean someoneToDisplay = manager.isSomeoneToDisplay();
+		boolean someoneToDisplay = fileManager.isSomeoneToDisplay();
 
 		if (!someoneToDisplay) {
 			currentEmployee = null;
@@ -598,7 +594,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 					&& Character.isDigit(pps.charAt(6)) && Character.isLetter(pps.charAt(7))
 					&& (pps.length() == 8 || Character.isLetter(pps.charAt(8)))) {
 				// check if PPS already in use
-				ppsExist = manager.isPpsExist(pps, currentByte);
+				ppsExist = fileManager.isPpsExist(pps, currentByte);
 			} // end if
 			else
 				ppsExist = true;
@@ -748,13 +744,13 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 		int returnVal = fc.showOpenDialog(EmployeeDetails.this);
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			newFile = fc.getSelectedFile();
-			if (!employeeFileManager.fileExists()) {
+			if (!fileManager.fileExists()) {
 				JOptionPane.showMessageDialog(null, "File does not exist!");
 			} else {
 				if (file.getName().equals(generatedFileName))
 					file.delete();
 				file = newFile;
-				employeeFileManager.openFile(file.getAbsolutePath());
+				fileManager.openFile(file.getAbsolutePath());
 				firstRecord();
 				displayRecords(currentEmployee);
 			}
@@ -780,7 +776,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 						// get changes for current Employee
 						currentEmployee = getChangedDetails();
 						// write changes to file for corresponding Employee record
-						employeeFileManager.saveChanges(currentEmployee, currentByteStart);
+						fileManager.saveChanges(currentEmployee, currentByteStart);
 					} // end if
 				} // end if
 			} // end if
@@ -796,7 +792,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 				JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
 		if (returnVal == JOptionPane.YES_OPTION) {
 			currentEmployee = getChangedDetails();
-			employeeFileManager.saveChanges(currentEmployee, currentByteStart);
+			fileManager.saveChanges(currentEmployee, currentByteStart);
 			changesMade = false;
 		}
 		displayRecords(currentEmployee);
@@ -823,7 +819,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 				// add .dat extension if it was not there
 				newFile = new File(newFile.getAbsolutePath() + ".dat");
 			}
-			employeeFileManager.saveFile(newFile.getAbsolutePath());
+			fileManager.saveFile(newFile.getAbsolutePath());
 			file = newFile;
 			changesMade = false;
 		}
@@ -832,7 +828,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// allow to save changes to file when exiting the application
 	private void exitApp() {
 		// if file is not empty allow to save changes
-		if (employeeFileManager.getFileLength() != 0) {
+		if (fileManager.getFileLength() != 0) {
 			if (changesMade) {
 				int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to save changes?", "Save",
 						JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
