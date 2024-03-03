@@ -1,7 +1,7 @@
 /*
- * 
+ *
  * This is the definition of the Employee object
- * 
+ *
  * */
 
 public class Employee{
@@ -28,7 +28,7 @@ public class Employee{
 
 	// Create Employee with details
 	public Employee(int employeeId, String pps, String surname, String firstName, char gender, String department, double salary,
-			boolean fullTime) {
+					boolean fullTime) {
 		this.employeeId = employeeId;
 		this.pps = pps;
 		this.surname = surname;
@@ -76,7 +76,7 @@ public class Employee{
 	public void setEmployeeId(int employeeId) {
 		this.employeeId = employeeId;
 	}
-	
+
 	public void setPps(String pps) {
 		this.pps = pps;
 	}
