@@ -48,48 +48,62 @@ public class EmployeeSummaryDialog extends JDialog implements ActionListener {
 	// initialise container
 	public Container summaryPane() {
 		JPanel summaryDialog = new JPanel(new MigLayout());
+		summaryDialog.add(createButtonPanel(), "growx, pushx, wrap");
+
+		JScrollPane scrollPane = new JScrollPane(createEmployeeTable());
+		scrollPane.setBorder(BorderFactory.createTitledBorder("Employee Details"));
+		summaryDialog.add(scrollPane, "growx, pushx, wrap");
+
+		return summaryDialog;
+	}
+
+	private JPanel createButtonPanel() {
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-		JTable employeeTable;
-		DefaultTableModel tableModel;
+		buttonPanel.add(back = new JButton("Back"));
+		back.addActionListener(this);
+		back.setToolTipText("Return to main screen");
+		return buttonPanel;
+	}
+
+	private JTable createEmployeeTable() {
 		// column center alignment
 		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-		// column left alignment 
+		// column left alignment
 		DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
+
 		Vector<String> header = new Vector<String>();
 		// header names
-		String[] headerName = { "ID", "PPS Number", "Surname", "First Name", "Gender", "Department", "Salary",
-				"Full Time" };
+		String[] headerName = { "ID", "PPS Number", "Surname", "First Name", "Gender", "Department", "Salary", "Full Time" };
 		// column widths
 		int[] colWidth = { 15, 100, 120, 120, 50, 120, 80, 80 };
+
 		centerRenderer.setHorizontalAlignment(JLabel.CENTER);
 		leftRenderer.setHorizontalAlignment(JLabel.LEFT);
+
 		// add headers
 		for (int i = 0; i < headerName.length; i++) {
 			header.addElement(headerName[i]);
-		}// end for
-		// construnct table and choose table model for each column
-		tableModel = new DefaultTableModel(this.allEmployees, header) {
+		}
+
+		DefaultTableModel tableModel = new DefaultTableModel(this.allEmployees, header) {
 			public Class getColumnClass(int c) {
 				switch (c) {
-				case 0:
-					return Integer.class;
-				case 4:
-					return Character.class;
-				case 6:
-					return Double.class;
-				case 7:
-					return Boolean.class;
-				default:
-					return String.class;
-				}// end switch
-			}// end getColumnClass
+					case 0: return Integer.class;
+					case 4: return Character.class;
+					case 6: return Double.class;
+					case 7: return Boolean.class;
+					default: return String.class;
+				}
+			}
 		};
 
-		employeeTable = new JTable(tableModel);
+		JTable employeeTable = new JTable(tableModel);
+
 		// add header names to table
 		for (int i = 0; i < employeeTable.getColumnCount(); i++) {
 			employeeTable.getColumn(headerName[i]).setMinWidth(colWidth[i]);
-		}// end for
+		}
+
 		// set alignments
 		employeeTable.getColumnModel().getColumn(0).setCellRenderer(leftRenderer);
 		employeeTable.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
@@ -98,18 +112,9 @@ public class EmployeeSummaryDialog extends JDialog implements ActionListener {
 		employeeTable.setEnabled(false);
 		employeeTable.setPreferredScrollableViewportSize(new Dimension(800, (15 * employeeTable.getRowCount() + 15)));
 		employeeTable.setAutoCreateRowSorter(true);
-		JScrollPane scrollPane = new JScrollPane(employeeTable);
 
-		buttonPanel.add(back = new JButton("Back"));
-		back.addActionListener(this);
-		back.setToolTipText("Return to main screen");
-		
-		summaryDialog.add(buttonPanel,"growx, pushx, wrap");
-		summaryDialog.add(scrollPane,"growx, pushx, wrap");
-		scrollPane.setBorder(BorderFactory.createTitledBorder("Employee Details"));
-		
-		return summaryDialog;
-	}// end summaryPane
+		return employeeTable;
+	}
 
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == back){

@@ -1,5 +1,7 @@
 import java.io.File;
 
+
+//if a method is unused it was causing problems, probably due to initlization errors or felt it wasn't helping
 public class ManagerEmployeeDetails {
     private RandomFile application = new RandomFile();
     private File file;

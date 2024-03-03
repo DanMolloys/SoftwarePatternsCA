@@ -1,15 +1,15 @@
 /*
- * 
+ *
  * This is a Random Access Employee record definition
- * 
+ *
  * */
 
 import java.io.RandomAccessFile;
 import java.io.IOException;
 
 public class RandomAccessEmployeeRecord extends Employee
-{  
-    public static final int SIZE = 175; // Size of each RandomAccessEmployeeRecord object
+{
+   public static final int SIZE = 175; // Size of each RandomAccessEmployeeRecord object
 
    // Create empty record
    public RandomAccessEmployeeRecord()
@@ -18,8 +18,8 @@ public class RandomAccessEmployeeRecord extends Employee
    } // end RandomAccessEmployeeRecord
 
    // Initialize record with details
-   public RandomAccessEmployeeRecord( int employeeId, String pps, String surname, String firstName, char gender, 
-		   String department, double salary, boolean fullTime)
+   public RandomAccessEmployeeRecord( int employeeId, String pps, String surname, String firstName, char gender,
+                                      String department, double salary, boolean fullTime)
    {
       super(employeeId, pps, surname, firstName, gender, department, salary, fullTime);
    } // end RandomAccessEmployeeRecord
@@ -27,14 +27,14 @@ public class RandomAccessEmployeeRecord extends Employee
    // Read a record from specified RandomAccessFile
    public void read( RandomAccessFile file ) throws IOException
    {
-	   	setEmployeeId(file.readInt());
-		setPps(readName(file));
-		setSurname(readName(file));
-		setFirstName(readName(file));
-		setGender(file.readChar());
-		setDepartment(readName(file));
-		setSalary(file.readDouble());
-		setFullTime(file.readBoolean());
+      setEmployeeId(file.readInt());
+      setPps(readName(file));
+      setSurname(readName(file));
+      setFirstName(readName(file));
+      setGender(file.readChar());
+      setDepartment(readName(file));
+      setSalary(file.readDouble());
+      setFullTime(file.readBoolean());
    } // end read
 
    // Ensure that string is correct length
@@ -47,7 +47,7 @@ public class RandomAccessEmployeeRecord extends Employee
          temp = file.readChar();
          name[ count ] = temp;
       } // end for     
-      
+
       return new String( name ).replace( '\0', ' ' );
    } // end readName
 
@@ -66,13 +66,13 @@ public class RandomAccessEmployeeRecord extends Employee
 
    // Ensure that string is correct length
    private void writeName( RandomAccessFile file, String name )
-      throws IOException
+           throws IOException
    {
       StringBuffer buffer = null;
 
-      if ( name != null ) 
+      if ( name != null )
          buffer = new StringBuffer( name );
-      else 
+      else
          buffer = new StringBuffer( 20 );
 
       buffer.setLength( 20 );

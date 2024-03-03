@@ -1,11 +1,3 @@
-
-/* *
- * This is a menu driven system that will allow users to define a data structure representing a collection of
- * records that can be displayed both by means of a dialog that can be scrolled through and by means of a table
- * to give an overall view of the collection contents.
- *
- * */
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -52,6 +44,8 @@ import net.miginfocom.swing.MigLayout;
 public class EmployeeDetails extends JFrame implements ActionListener, ItemListener, DocumentListener, WindowListener {
 
 
+
+
 	// decimal format for inactive currency text field
 	private static final DecimalFormat format = new DecimalFormat("\u20ac ###,###,##0.00");
 	// decimal format for active currency text field
@@ -62,8 +56,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// display files in File Chooser only with extension .dat
 	private FileNameExtensionFilter datfilter = new FileNameExtensionFilter("dat files (*.dat)", "dat");
 	// hold file name and path for current file in use
-    private File file;
-    private ManagerEmployeeDetails manager;
+
 
 	// holds true or false if any changes are made for text fields
 	private boolean change = false;
@@ -76,6 +69,15 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	private JComboBox<String> genderCombo, departmentCombo, fullTimeCombo;
 	private JTextField idField, ppsField, surnameField, firstNameField, salaryField;
 	private static EmployeeDetails frame = new EmployeeDetails();
+
+
+	private File file;
+
+	//create an instance of the Manager class
+	private ManagerEmployeeDetails manager;
+
+	//create an instance of the fileManager class
+	private EmployeeFileManager employeeFileManager;
 
 
 	// font for labels, text fields and combo boxes
@@ -91,6 +93,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	String[] department = { "", "Administration", "Production", "Transport", "Management" };
 	// full time combo box values
 	String[] fullTime = { "", "Yes", "No" };
+
 
 
 	// initialize menu bar
@@ -363,58 +366,42 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end displaySearchBySurnameDialog
 
 	// find byte start in file for first active record
-    // manager deals with all now
-    private void firstRecord() {
-        // if any active record in file look for first record
-        if (isSomeoneToDisplay()) {
-            // get first record using manager
-            currentEmployee = manager.getFirst();
-            // if first record is inactive look for next record
-            if (currentEmployee.getEmployeeId() == 0)
-                nextRecord(); // look for next record
-        }
-    }
+	// using the EmployeeFileManager
+	private void firstRecord() {
+		if (isSomeoneToDisplay()) {
+			currentEmployee = employeeFileManager.readRecords(0);
+			if (currentEmployee.getEmployeeId() == 0)
+				nextRecord();
+		}
+	}
 
 	// find byte start in file for previous active record
-    private void previousRecord() {
-        if (isSomeoneToDisplay()) {
-            // get previous employee
-            currentEmployee = manager.getPrevious(currentByteStart);
-            // loop to previous record until Employee is active - ID is not 0
-            while (currentEmployee.getEmployeeId() == 0) {
-                // get byte start in file for previous record
-                currentEmployee = manager.getNext(currentByteStart);
-                // assign current Employee to previous record in file
-                currentEmployee = manager.getPrevious(currentByteStart);
-            }
-        }
-    }
+	private void previousRecord() {
+		if (isSomeoneToDisplay()) {
+			currentEmployee = employeeFileManager.readRecords(currentByteStart - EmployeeFileManager.SIZE);
+			if (currentEmployee.getEmployeeId() == 0)
+				previousRecord();
+		}
+	}
 
 	// find byte start in file for next active record
-    private void nextRecord() {
-        if (isSomeoneToDisplay()) {
-            // get next employee
-            currentEmployee = manager.getNext(currentByteStart);
-            // loop to previous next until Employee is active - ID is not 0
-            while (currentEmployee.getEmployeeId() == 0) {
-                // get byte start in file for next record
-                currentEmployee = manager.getNext(currentByteStart);
-                // assign current Employee to next record in file
-                currentEmployee = manager.getNext(currentByteStart);
-            }
-        }
-    }
+	private void nextRecord() {
+		if (isSomeoneToDisplay()) {
+			currentEmployee = employeeFileManager.readRecords(currentByteStart + EmployeeFileManager.SIZE);
+			if (currentEmployee.getEmployeeId() == 0)
+				nextRecord();
+		}
+	}
 
 	// find byte start in file for last active record
-    private void lastRecord() {
-        if (isSomeoneToDisplay()) {
-            // get last employee
-            currentEmployee = manager.getLast();
-            // if last record is inactive look for previous record
-            if (currentEmployee.getEmployeeId() == 0)
-                previousRecord();
-        }
-    }
+	private void lastRecord() {
+		if (isSomeoneToDisplay()) {
+			currentByteStart = file.length() - EmployeeFileManager.SIZE;
+			currentEmployee = employeeFileManager.readRecords(currentByteStart);
+			if (currentEmployee.getEmployeeId() == 0)
+				previousRecord();
+		}
+	}
 
 	// search Employee by ID
 	public void searchEmployeeById() {
@@ -485,29 +472,32 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end getChangedDetails
 
 	// add Employee object to fail
-    void addRecord(Employee newEmployee) {
-        // add employee
-        manager.addRecord(newEmployee);
-    }
+	// add a new employee and create a new file for the record using the File Manager class
+	void addRecord(Employee newEmployee) {
+		// generate a filename for the new record
+		String fileName = "Employee_" + newEmployee.getEmployeeId() + ".dat";
+
+		// create a new file for the record
+		employeeFileManager.createFile(fileName);
+
+		// add employee
+		manager.addRecord(newEmployee);
+	}
 
 	// delete (make inactive - empty) record from file
 	private void deleteRecord() {
-		if (isSomeoneToDisplay()) {// if any active record in file display
-			// message and delete record
+		if (isSomeoneToDisplay()) {
 			int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to delete record?", "Delete",
 					JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
-			// if answer yes delete (make inactive - empty) record
 			if (returnVal == JOptionPane.YES_OPTION) {
-				// delete (make inactive - empty) record in file proper position
-				manager.deleteRecord(currentByteStart);
-				// if any active record in file display next record
+				employeeFileManager.deleteRecords(currentByteStart);
 				if (isSomeoneToDisplay()) {
-					nextRecord();// look for next record
+					nextRecord();
 					displayRecords(currentEmployee);
-				} // end if
-			} // end if
-		} // end if
-	}// end deleteRecord
+				}
+			}
+		}
+	}
 
 	// create vector of vectors with all Employee details
 	private Vector<Vector> getAllEmloyees() {
@@ -719,39 +709,36 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end setEnabled
 
 	// open file
+	// using the File Manager
 	private void openFile() {
 		final JFileChooser fc = new JFileChooser();
 		fc.setDialogTitle("Open");
-		// display files in File Chooser only with extension .dat
 		fc.setFileFilter(datfilter);
-		File newFile; // holds opened file name and path
-		// if old file is not empty or changes has been made, offer user to save
-		// old file
+		File newFile;
+
 		if (file.length() != 0 || change) {
 			int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to save changes?", "Save",
 					JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
-			// if user wants to save file, save it
 			if (returnVal == JOptionPane.YES_OPTION) {
-				saveFile();// save file
-			} // end if
-		} // end if
+				saveFile();
+			}
+		}
 
 		int returnVal = fc.showOpenDialog(EmployeeDetails.this);
-		// if file been chosen, open it
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			newFile = fc.getSelectedFile();
-			// if old file wasn't saved and its name is generated file name,
-			// delete this file
-			if (file.getName().equals(generatedFileName))
-				file.delete();// delete file
-			file = newFile;// assign opened file to file
-			// open file for reading
-			application.openReadFile(file.getAbsolutePath());
-			firstRecord();// look for first record
-			displayRecords(currentEmployee);
-			application.closeReadFile();// close file for reading
-		} // end if
-	}// end openFile
+			if (!employeeFileManager.fileExists()) {
+				JOptionPane.showMessageDialog(null, "File does not exist!");
+			} else {
+				if (file.getName().equals(generatedFileName))
+					file.delete();
+				file = newFile;
+				employeeFileManager.openFile(file.getAbsolutePath());
+				firstRecord();
+				displayRecords(currentEmployee);
+			}
+		}
+	}
 
 	// save file
 	private void saveFile() {
@@ -790,17 +777,14 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	private void saveChanges() {
 		int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to save changes to current Employee?", "Save",
 				JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
-		// if user choose to save changes, save changes
 		if (returnVal == JOptionPane.YES_OPTION) {
-			// get changes for current Employee
 			currentEmployee = getChangedDetails();
-			// write changes to file for corresponding Employee record
-			manager.changeRecords(currentEmployee, currentByteStart);
-			changesMade = false;// state that all changes has been saved
-		} // end if
+			employeeFileManager.writeRecords(currentEmployee, currentByteStart);
+			changesMade = false;
+		}
 		displayRecords(currentEmployee);
 		setEnabled(false);
-	}// end saveChanges
+	}
 
 	// save file as 'save as'
 	private void saveFileAs() {
@@ -847,10 +831,10 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 		if (file.length() != 0) {
 			if (changesMade) {
 				int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to save changes?", "Save",
-						JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
+						JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
 				// if user chooses to save file, save file
 				if (returnVal == JOptionPane.YES_OPTION) {
-					saveFile();// save file
+					employeeFileManager.saveFile(); // Using the File Manager
 					// delete generated file if user saved details to other file
 					if (file.getName().equals(generatedFileName))
 						file.delete();// delete file
@@ -879,7 +863,10 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 		} // end else
 	}// end exitApp
 
-	// generate 20 character long file name
+
+
+	// create file with generated file name when application is opened
+	// removed the getFileName method and updated this method to use File Manager
 	private String getFileName() {
 		String fileNameChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-";
 		StringBuilder fileName = new StringBuilder();
@@ -894,15 +881,13 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end getFileName
 
 	// create file with generated file name when application is opened
-    private void createRandomFile() {
-        generatedFileName = getFileName() + ".dat";
-        // assign generated file name to file
-        file = new File(generatedFileName);
-        // create file
-        application.createFile(file.getName());
-        // create ManagerEmployeeDetails
-        manager = new ManagerEmployeeDetails(file);
-    }// end createRandomFile
+	private void createRandomFile() {
+		generatedFileName = getFileName() + ".dat";
+		// assign generated file name to file
+		file = new File(generatedFileName);
+		// create file
+		application.createFile(file.getName());
+	}// end createRandomFile
 
 	// action listener for buttons, text field and menu items
 	public void actionPerformed(ActionEvent e) {
