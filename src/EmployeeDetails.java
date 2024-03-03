@@ -42,7 +42,16 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import net.miginfocom.swing.MigLayout;
 
 public class EmployeeDetails extends JFrame implements ActionListener, ItemListener, DocumentListener, WindowListener {
+	private EmployeeSearchManager searchManager;
+	private EmployeeFileManager fileManager;
 
+	public EmployeeDetails() {
+		// Assuming that these managers are working with the same file.
+		File file = new File("employees.dat");
+		this.fileManager = new EmployeeFileManager(file);
+		this.searchManager = new EmployeeSearchManager(fileManager);
+
+	}
 
 
 
@@ -74,7 +83,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	private File file;
 
 	//create an instance of the Manager class
-	private ManagerEmployeeDetails manager;
+	private EmployeeSearchManager manager;
 
 	//create an instance of the fileManager class
 	private EmployeeFileManager employeeFileManager;
@@ -369,7 +378,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// using the EmployeeFileManager
 	private void firstRecord() {
 		if (isSomeoneToDisplay()) {
-			currentEmployee = employeeFileManager.readRecords(0);
+			currentEmployee = manager.getFirstRecord();
 			if (currentEmployee.getEmployeeId() == 0)
 				nextRecord();
 		}
@@ -378,7 +387,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// find byte start in file for previous active record
 	private void previousRecord() {
 		if (isSomeoneToDisplay()) {
-			currentEmployee = employeeFileManager.readRecords(currentByteStart - EmployeeFileManager.SIZE);
+			currentEmployee = manager.getPreviousRecord(currentByteStart);
 			if (currentEmployee.getEmployeeId() == 0)
 				previousRecord();
 		}
@@ -387,7 +396,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// find byte start in file for next active record
 	private void nextRecord() {
 		if (isSomeoneToDisplay()) {
-			currentEmployee = employeeFileManager.readRecords(currentByteStart + EmployeeFileManager.SIZE);
+			currentEmployee = manager.getNextRecord(currentByteStart);
 			if (currentEmployee.getEmployeeId() == 0)
 				nextRecord();
 		}
@@ -396,8 +405,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// find byte start in file for last active record
 	private void lastRecord() {
 		if (isSomeoneToDisplay()) {
-			currentByteStart = file.length() - EmployeeFileManager.SIZE;
-			currentEmployee = employeeFileManager.readRecords(currentByteStart);
+			currentEmployee = manager.getLastRecord();
 			if (currentEmployee.getEmployeeId() == 0)
 				previousRecord();
 		}
@@ -473,6 +481,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 
 	// add Employee object to fail
 	// add a new employee and create a new file for the record using the File Manager class
+	/*
 	void addRecord(Employee newEmployee) {
 		// generate a filename for the new record
 		String fileName = "Employee_" + newEmployee.getEmployeeId() + ".dat";
@@ -481,8 +490,20 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 		employeeFileManager.createFile(fileName);
 
 		// add employee
-		manager.addRecord(newEmployee);
+		employeeFileManager.addRecord(newEmployee);
 	}
+
+	 */
+
+	//my one wouldn't work due to it expecting two parameters from the FileManager method.
+	//chose to use original
+	public void addRecord(Employee newEmployee) {
+		// open file for writing
+		application.openWriteFile(file.getAbsolutePath());
+		// write into a file
+		currentByteStart = application.addRecords(newEmployee);
+		application.closeWriteFile();// close file for writing
+	}// end addRecord
 
 	// delete (make inactive - empty) record from file
 	private void deleteRecord() {
@@ -490,7 +511,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 			int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to delete record?", "Delete",
 					JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
 			if (returnVal == JOptionPane.YES_OPTION) {
-				employeeFileManager.deleteRecords(currentByteStart);
+				employeeFileManager.deleteRecord(currentByteStart);
 				if (isSomeoneToDisplay()) {
 					nextRecord();
 					displayRecords(currentEmployee);
@@ -756,14 +777,10 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 				if (returnVal == JOptionPane.YES_OPTION) {
 					// save changes if ID field is not empty
 					if (!idField.getText().equals("")) {
-						// open file for writing
-						application.openWriteFile(file.getAbsolutePath());
 						// get changes for current Employee
 						currentEmployee = getChangedDetails();
-						// write changes to file for corresponding Employee
-						// record
-						application.changeRecords(currentEmployee, currentByteStart);
-						application.closeWriteFile();// close file for writing
+						// write changes to file for corresponding Employee record
+						employeeFileManager.saveChanges(currentEmployee, currentByteStart);
 					} // end if
 				} // end if
 			} // end if
@@ -779,7 +796,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 				JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
 		if (returnVal == JOptionPane.YES_OPTION) {
 			currentEmployee = getChangedDetails();
-			employeeFileManager.writeRecords(currentEmployee, currentByteStart);
+			employeeFileManager.saveChanges(currentEmployee, currentByteStart);
 			changesMade = false;
 		}
 		displayRecords(currentEmployee);
@@ -805,36 +822,23 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 			if (!checkFileName(newFile)) {
 				// add .dat extension if it was not there
 				newFile = new File(newFile.getAbsolutePath() + ".dat");
-				// create new file
-				application.createFile(newFile.getAbsolutePath());
-			} // end id
-			else
-				// create new file
-				application.createFile(newFile.getAbsolutePath());
-
-			try {// try to copy old file to new file
-				Files.copy(file.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-				// if old file name was generated file name, delete it
-				if (file.getName().equals(generatedFileName))
-					file.delete();// delete file
-				file = newFile;// assign new file to file
-			} // end try
-			catch (IOException e) {
-			} // end catch
-		} // end if
-		changesMade = false;
+			}
+			employeeFileManager.saveFile(newFile.getAbsolutePath());
+			file = newFile;
+			changesMade = false;
+		}
 	}// end saveFileAs
 
 	// allow to save changes to file when exiting the application
 	private void exitApp() {
 		// if file is not empty allow to save changes
-		if (file.length() != 0) {
+		if (employeeFileManager.getFileLength() != 0) {
 			if (changesMade) {
 				int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to save changes?", "Save",
 						JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
 				// if user chooses to save file, save file
 				if (returnVal == JOptionPane.YES_OPTION) {
-					employeeFileManager.saveFile(); // Using the File Manager
+					saveFile(); // Using the File Manager
 					// delete generated file if user saved details to other file
 					if (file.getName().equals(generatedFileName))
 						file.delete();// delete file
